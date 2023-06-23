@@ -35,14 +35,17 @@ public class MainApplication {
         }
         private static final int TILE_SIZE = 10;
         Chip8 chip8;
+        InputManager inputManager;
         Canvas canvas = new Canvas();
 
-        private Frame(Chip8 chip8) {
+        private Frame(Chip8 chip8, InputManager inputManager) {
             this.chip8 = chip8;
+            this.inputManager = inputManager;
 
             this.setTitle("CHIP-8");
-            this.setSize(700, 360);
+            this.setSize(640, 360);
             this.add(canvas);
+            canvas.addKeyListener(inputManager);
 
             addWindowListener(new WindowAdapter() {
                 @Override
@@ -56,9 +59,10 @@ public class MainApplication {
     }
 
     public static void main(String[] args) throws IOException {
-        Chip8 chip8 = new Chip8();
-        Frame frame = new Frame(chip8);
-        chip8.load(Files.newInputStream(Path.of("F:/chip8/flags.ch8")));
+        InputManager inputManager = new InputManager();
+        Chip8 chip8 = new Chip8(inputManager);
+        Frame frame = new Frame(chip8, inputManager);
+        chip8.load(Files.newInputStream(Path.of("F:/chip8/keypad.ch8")));
 
         // CPU thread
         new Thread(() -> {
