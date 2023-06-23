@@ -58,13 +58,13 @@ public class MainApplication {
     public static void main(String[] args) throws IOException {
         Chip8 chip8 = new Chip8();
         Frame frame = new Frame(chip8);
-        chip8.load(Files.newInputStream(Path.of("F:/test.ch8")));
+        chip8.load(Files.newInputStream(Path.of("F:/chip8/flags.ch8")));
 
         // CPU thread
         new Thread(() -> {
             while (chip8.tick()) {
                 try {
-                    Thread.sleep(2);
+                    Thread.sleep(1);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }

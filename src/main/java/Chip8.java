@@ -114,20 +114,24 @@ public class Chip8 {
                 this.registers[o._x__()] ^= this.registers[o.__y_()];
             } else if (o.d == 4) { // 8xy4 - Vx += Vy; VF is set to carry flag
                 int sum = this.registers[o._x__()] + this.registers[o.__y_()];
-                this.registers[0xf] = ((sum > 255) ? 1 : 0);
                 this.registers[o._x__()] = sum & 0xff;
+                this.registers[0xf] = ((sum > 255) ? 1 : 0);
             } else if (o.d == 5) { // 8xy5 - Vx -= Vy; sets carry
-                this.registers[0xf] = (this.registers[o._x__()] < this.registers[o.__y_()]) ? 1 : 0;
+                int carry = (this.registers[o._x__()] > this.registers[o.__y_()]) ? 1 : 0;
                 this.registers[o._x__()] = (this.registers[o._x__()] - this.registers[o.__y_()]) & 0xff;
+                this.registers[0xf] = carry;
             } else if (o.d == 6) { // 8x_6 - Vx >>= 1; sets Vf to 1 if LSB of Vx was 1
-                this.registers[0xf] = this.registers[o._x__()] & 0b00000001;
+                int carry = this.registers[o._x__()] & 0b00000001;
                 this.registers[o._x__()] >>= 1;
+                this.registers[0xf] = carry;
             } else if (o.d == 7) { // 8xy7 - Vx = Vy - Vx; sets carry
-                this.registers[0xf] = (this.registers[o._x__()] > this.registers[o.__y_()]) ? 1 : 0;
+                int carry = (this.registers[o._x__()] < this.registers[o.__y_()]) ? 1 : 0;
                 this.registers[o._x__()] = (this.registers[o.__y_()] - this.registers[o._x__()]) & 0xff;
+                this.registers[0xf] = carry;
             } else if (o.d == 0xe) { // 8x_e - Vx <<= 1; sets Vf to 1 if MSB of Vx was 1
-                this.registers[0xf] = this.registers[o._x__()] & 0b10000000;
+                int carry = this.registers[o._x__()] & 0b10000000;
                 this.registers[o._x__()] = (this.registers[o._x__()] << 1) & 0xff;
+                this.registers[0xf] = carry;
             }
         } else if (o.a == 9) { // 9xy0 - skip if Vx != Vy
             if (this.registers[o._x__()] != this.registers[o.__y_()])
@@ -184,6 +188,8 @@ public class Chip8 {
                 }
 
                 this.index += o._x__() + 1;
+            } else {
+                System.out.println("Unsupported opcode " + o);
             }
         }
     }
