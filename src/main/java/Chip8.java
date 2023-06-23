@@ -129,7 +129,7 @@ public class Chip8 {
                 this.registers[o._x__()] = (this.registers[o.__y_()] - this.registers[o._x__()]) & 0xff;
                 this.registers[0xf] = carry;
             } else if (o.d == 0xe) { // 8x_e - Vx <<= 1; sets Vf to 1 if MSB of Vx was 1
-                int carry = this.registers[o._x__()] & 0b10000000;
+                int carry = (this.registers[o._x__()] & 0b10000000) >> 7;
                 this.registers[o._x__()] = (this.registers[o._x__()] << 1) & 0xff;
                 this.registers[0xf] = carry;
             }
