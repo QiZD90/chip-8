@@ -57,6 +57,14 @@ public class InputManager implements KeyListener {
         }
     }
 
+    public int waitForKey() {
+        while (true) {
+            for (int i = 0; i <= 0xf; i++)
+                if (this.keys[i])
+                    return i;
+        }
+    }
+
     public boolean getKey(int key) {
         return this.keys[key];
     }

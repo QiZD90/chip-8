@@ -41,11 +41,17 @@ public class MainApplication {
         private Frame(Chip8 chip8, InputManager inputManager) {
             this.chip8 = chip8;
             this.inputManager = inputManager;
-
             this.setTitle("CHIP-8");
-            this.setSize(640, 360);
-            this.add(canvas);
+            this.setSize(660, 380);
+
+            MenuBar menuBar = new MenuBar();
+            Menu menu = new Menu("File");
+            menu.add(new MenuItem("Load"));
+            menuBar.add(menu);
+            this.setMenuBar(menuBar);
+
             canvas.addKeyListener(inputManager);
+            this.add(canvas);
 
             addWindowListener(new WindowAdapter() {
                 @Override
@@ -62,7 +68,7 @@ public class MainApplication {
         InputManager inputManager = new InputManager();
         Chip8 chip8 = new Chip8(inputManager);
         Frame frame = new Frame(chip8, inputManager);
-        chip8.load(Files.newInputStream(Path.of("F:/chip8/keypad.ch8")));
+        chip8.load(Files.newInputStream(Path.of("F:/chip8/danm8ku.ch8")));
 
         // CPU thread
         new Thread(() -> {
