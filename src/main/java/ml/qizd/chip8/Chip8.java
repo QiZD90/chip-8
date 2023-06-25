@@ -156,9 +156,10 @@ public class Chip8 {
         }
     }
 
-    // TODO: fix wrapping inaccuracy
     private void execute_d(Opcode o) {
         int x = this.registers[o._x__()] % 64, y = this.registers[o.__y_()] % 32, height = o.___n();
+        this.registers[0xf] = 0;
+
         for (int i = 0; i < height; i++) {
             if (y + i >= 32)
                 break;
@@ -168,8 +169,8 @@ public class Chip8 {
                 if (x + j >= 64)
                     break;
 
-                if ((b & (0x80 >> j)) != 0)
-                    this.registers[0xf] = this.getFrameBuffer().setXor(x + j, i + y, true) ? 1 : 0;
+                if ((b & (0x80 >> j)) != 0 && this.getFrameBuffer().setXor(x + j, i + y, true))
+                    this.registers[0xf] = 1;
             }
         }
 

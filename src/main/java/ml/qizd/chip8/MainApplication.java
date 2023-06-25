@@ -125,9 +125,9 @@ public class MainApplication {
                 delta += time - lastTime;
                 lastTime = time;
 
-                if (delta >= 1000000) {
+                if (delta >= 2000000) {
                     chip8.tick();
-                    delta -= 1000000;
+                    delta -= 2000000;
                 }
             }
         }).start();
