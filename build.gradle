@@ -22,3 +22,11 @@ test {
 application {
     mainClass = 'ml.qizd.chip8.MainApplication'
 }
+
+jar {
+    manifest {
+        attributes(
+                'Main-Class': 'ml.qizd.chip8.MainApplication'
+        )
+    }
+}

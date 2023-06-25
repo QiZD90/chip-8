@@ -156,6 +156,7 @@ public class Chip8 {
         }
     }
 
+    // TODO: fix wrapping inaccuracy
     private void execute_d(Opcode o) {
         int x = this.registers[o._x__()] % 64, y = this.registers[o.__y_()] % 32, height = o.___n();
         for (int i = 0; i < height; i++) {
