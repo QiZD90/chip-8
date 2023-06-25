@@ -1,7 +1,11 @@
+package ml.qizd.chip8;
+
 import java.awt.*;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -20,11 +24,8 @@ public class MainApplication {
 
                 for (int i = 0; i < frameBuffer.HEIGHT; i++) {
                     for (int j = 0; j < frameBuffer.WIDTH; j++) {
-                        if (frameBuffer.get(j, i)) {
-                            g2d.fillRect(j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-                        } else {
-                            g2d.clearRect(j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-                        }
+                        g2d.setColor(frameBuffer.get(j, i) ? Color.WHITE : Color.BLACK);
+                        g2d.fillRect(j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE);
                     }
                 }
             }
@@ -38,6 +39,29 @@ public class MainApplication {
         InputManager inputManager;
         Canvas canvas = new Canvas();
 
+        private void showErrorDialog(String error) {
+            Dialog dialog = new Dialog(this, "Error", Dialog.ModalityType.APPLICATION_MODAL);
+            dialog.addWindowListener(new WindowAdapter() {
+                @Override
+                public void windowClosing(WindowEvent e) {
+                    dialog.setVisible(false);
+                }
+            });
+
+            dialog.addKeyListener(new KeyAdapter() {
+                @Override
+                public void keyPressed(KeyEvent e) {
+                    if (e.getKeyCode() == KeyEvent.VK_ESCAPE)
+                        dialog.setVisible(false);
+
+                    super.keyPressed(e);
+                }
+            });
+            dialog.setSize(300, 100);
+            dialog.add(new Label(error));
+            dialog.setVisible(true);
+        }
+
         private Frame(Chip8 chip8, InputManager inputManager) {
             this.chip8 = chip8;
             this.inputManager = inputManager;
@@ -45,8 +69,31 @@ public class MainApplication {
             this.setSize(660, 380);
 
             MenuBar menuBar = new MenuBar();
-            Menu menu = new Menu("File");
-            menu.add(new MenuItem("Load"));
+            Menu menu = new Menu("CHIP-8");
+
+            MenuItem load = new MenuItem("Load ROM", new MenuShortcut(KeyEvent.VK_L));
+            load.addActionListener((a) -> {
+                FileDialog fileDialog = new FileDialog(this, "Select ROM");
+                fileDialog.setVisible(true);
+
+                if (fileDialog.getFile() == null)
+                    return;
+
+                Path path = Path.of(fileDialog.getDirectory(), fileDialog.getFile());
+                try (InputStream stream = Files.newInputStream(path)) {
+                    this.chip8.load(stream);
+                } catch (Exception e) {
+                    showErrorDialog("Failed to open file " + path);
+                }
+            });
+            menu.add(load);
+
+            MenuItem reset = new MenuItem("Reset CHIP-8", new MenuShortcut(KeyEvent.VK_R));
+            reset.addActionListener((a) -> {
+                this.chip8.reset();
+            });
+            menu.add(reset);
+
             menuBar.add(menu);
             this.setMenuBar(menuBar);
 
@@ -64,19 +111,23 @@ public class MainApplication {
         }
     }
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         InputManager inputManager = new InputManager();
         Chip8 chip8 = new Chip8(inputManager);
         Frame frame = new Frame(chip8, inputManager);
-        chip8.load(Files.newInputStream(Path.of("F:/chip8/danm8ku.ch8")));
 
         // CPU thread
         new Thread(() -> {
-            while (chip8.tick()) {
-                try {
-                    Thread.sleep(1);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
+            long lastTime = System.nanoTime();
+            long delta = 0;
+            while (true) {
+                long time = System.nanoTime();
+                delta += time - lastTime;
+                lastTime = time;
+
+                if (delta >= 1000000) {
+                    chip8.tick();
+                    delta -= 1000000;
                 }
             }
         }).start();

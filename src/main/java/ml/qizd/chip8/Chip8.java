@@ -1,7 +1,8 @@
+package ml.qizd.chip8;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Random;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class Chip8 {
     record Opcode(int a, int b, int c, int d) {
@@ -50,30 +51,28 @@ public class Chip8 {
         public void clear() {
             for (int i = 0; i < HEIGHT; i++)
                 for (int j = 0; j < WIDTH; j++)
-                    set(j, i, false);
+                    this.display[i][j] = false;
+
+            this.dirty = true;
         }
 
         public boolean get(int x, int y) {
             return this.display[y][x];
         }
 
-        public void set(int x, int y, boolean bit) {
-            this.display[y][x] = bit;
-            this.dirty = true;
-        }
-
         public boolean setXor(int x, int y, boolean bit) {
             boolean xorFlag = this.get(x, y) && bit;
-            set(x, y, bit ^ this.get(x, y));
+            this.display[y][x] = bit ^ this.get(x, y);
             return xorFlag;
         }
 
     }
 
     private final Random random = new Random();
+    private boolean running = false;
     private final int[] registers = new int[16];
     private int index = 0;
-    private final int[] stack = new int[32];
+    private final int[] stack = new int[16];
     private int stackPointer = -1;
     private int programCounter = 0x200;
     private final int[] memory = new int[4096];
@@ -172,6 +171,8 @@ public class Chip8 {
                     this.registers[0xf] = this.getFrameBuffer().setXor(x + j, i + y, true) ? 1 : 0;
             }
         }
+
+        this.getFrameBuffer().dirty = true;
     }
 
     private void execute_e(Opcode o) {
@@ -283,15 +284,23 @@ public class Chip8 {
         }
     }
 
-    public boolean tick() {
-        Opcode opcode = new Opcode(this.memory[programCounter], this.memory[programCounter + 1]);
+    private Opcode fetchOpcode() {
+        return new Opcode(this.memory[programCounter], this.memory[programCounter + 1]);
+    }
+
+    public void tick() {
+        if (!this.running)
+            return;
+
+        Opcode opcode = fetchOpcode();
         execute(opcode);
         this.programCounter += 2;
-
-        return this.programCounter <= 4096;
     }
 
     public void tickTimer() {
+        if (!this.running)
+            return;
+
         if (this.delayTimer > 0) {
             this.delayTimer -= 1;
         }
@@ -301,18 +310,23 @@ public class Chip8 {
         }
     }
 
-    /**
-     * Reads ROM from InputStream into memory
-     */
-    public void load(InputStream stream) throws IOException {
-        int i = 0x200, b = 0;
-        while ((b = stream.read()) != -1 && i < 4096) {
-            memory[i++] = b;
-        }
-    }
+    public void reset() {
+        // Clear the registers
+        for (int i = 0; i < 16; i++)
+            this.registers[i] = 0;
 
-    public Chip8(InputManager inputManager) {
-        this.inputManager = inputManager;
+        this.index = 0;
+        this.stackPointer = -1;
+        this.programCounter = 0x200;
+        this.delayTimer = 0;
+        this.soundTimer = 0;
+
+        // Clear stack and memory
+        for (int i = 0; i < 16; i++)
+            this.stack[i] = 0;
+
+        for (int i = 0; i < 4096; i++)
+            this.memory[i] = 0;
 
         // Load hex font
         int[] hexFont = {
@@ -334,5 +348,29 @@ public class Chip8 {
                 0xf0, 0x80, 0xf0, 0x80, 0x80  // f
         };
         System.arraycopy(hexFont, 0, this.memory, 0, 16 * 5);
+
+        // Clear the frame buffer
+        this.frameBuffer.clear();
+
+        this.running = false;
+    }
+
+    /**
+     * Reads ROM from InputStream into memory
+     */
+    public void load(InputStream stream) throws IOException {
+        this.reset();
+
+        int i = 0x200, b = 0;
+        while ((b = stream.read()) != -1 && i < 4096) {
+            memory[i++] = b;
+        }
+
+        this.running = true;
+    }
+
+    public Chip8(InputManager inputManager) {
+        this.inputManager = inputManager;
+        this.reset();
     }
 }

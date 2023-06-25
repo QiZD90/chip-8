@@ -1,3 +1,5 @@
+package ml.qizd.chip8;
+
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 
@@ -57,6 +59,7 @@ public class InputManager implements KeyListener {
         }
     }
 
+    // TODO: when the chip8 is reset while waiting for the key, the next loaded ROM doesn't work correctly
     public int waitForKey() {
         while (true) {
             for (int i = 0; i <= 0xf; i++)
