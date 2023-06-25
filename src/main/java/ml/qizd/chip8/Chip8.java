@@ -198,7 +198,7 @@ public class Chip8 {
         } else if (o.c == 0x1 && o.d == 0xe) { // fx1e - I += Vx
             this.index += this.registers[o._x__()];
         } else if (o.c == 0x2 && o.d == 0x9) { // fx29 - set I to hex font
-            this.index = this.memory[this.registers[o._x__()] * 5];
+            this.index = this.registers[o._x__()] * 5;
         } else if (o.c == 0x3 && o.d == 0x3) { // fx33 - store bcd of Vx at I
             int value = this.registers[o._x__()];
             this.memory[this.index] = value / 100;
