@@ -193,10 +193,14 @@ public class Chip8 {
             for (int i = 0; i < o.x + 1; i++) {
                 this.memory[this.index + i] = this.registers[i];
             }
+
+            this.index += o.x + 1;
         } else if (o.c == 0x6 && o.d == 0x5) { // Fx65 - restore registers
             for (int i = 0; i < o.x + 1; i++) {
                 this.registers[i] = this.memory[this.index + i];
             }
+
+            this.index += o.x + 1;
         } else {
             System.out.println("Unsupported opcode " + o);
         }
