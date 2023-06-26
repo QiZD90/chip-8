@@ -5,33 +5,17 @@ import java.io.InputStream;
 import java.util.Random;
 
 public class Chip8 {
-    record Opcode(int a, int b, int c, int d) {
-        public int nnnn() {
-            return this.a << 12 | this.b << 8 | this.c << 4 | this.d;
+    record Opcode(int a, int b, int c, int d, int x, int y, int kk, int nnnn, int nnn, int n) {
+        public String toString() {
+            return String.format(
+                    "Opcode[a=0x%01X, b=0x%01X, c=0x%01X, d=0x%01X, x=0x%01X, y=0x%01X, kk=0x%02X, nnnn=0x%04X, nnn=0x%03X, n=0x%01X]",
+                    a, b, c, d, x, y, kk, nnnn, nnn, n
+            );
         }
-
-        public int _nnn() {
-            return (short) (this.b << 8 | this.c << 4 | this.d);
-        }
-
-        public int ___n() {
-            return this.d;
-        }
-
-        public int _x__() {
-            return this.b;
-        }
-
-        public int __y_() {
-            return this.c;
-        }
-
-        public int __kk() {
-            return this.c << 4 | this.d;
-        }
-
-        Opcode(int a, int b) {
-            this(a >> 4, a & 0b00001111, b >> 4, b & 0b00001111);
+        Opcode(int _1, int _2) {
+            this(_1 >> 4, _1 & 0b00001111, _2 >> 4, _2 & 0b00001111,
+                    _1 & 0b00001111, _2 >> 4,
+                    _2, _1 << 8 | _2, (_1 & 0b00001111) << 8 | _2, _2 & 0b00001111);
         }
     }
 
@@ -100,53 +84,53 @@ public class Chip8 {
     private void execute_8(Opcode o) {
         switch (o.d) {
             case 0 -> { // 8xy0 - Vx = Vy
-                this.registers[o._x__()] = this.registers[o.__y_()];
+                this.registers[o.x] = this.registers[o.y];
             }
 
             case 1 -> { // 8xy1 - Vx | Vy
-                this.registers[o._x__()] |= this.registers[o.__y_()];
+                this.registers[o.x] |= this.registers[o.y];
                 this.registers[0xf] = 0; // OG chip-8 quirk
             }
 
             case 2 -> { // 8xy2 - Vx & Vy
-                this.registers[o._x__()] &= this.registers[o.__y_()];
+                this.registers[o.x] &= this.registers[o.y];
                 this.registers[0xf] = 0; // OG chip-8 quirk
             }
 
             case 3 -> { // 8xy3 - Vx ^ Vy
-                this.registers[o._x__()] ^= this.registers[o.__y_()];
+                this.registers[o.x] ^= this.registers[o.y];
                 this.registers[0xf] = 0; // OG chip-8 quirk
             }
 
             case 4 -> { // 8xy4 - Vx += Vy; VF is set to carry flag
-                int sum = this.registers[o._x__()] + this.registers[o.__y_()];
-                this.registers[o._x__()] = sum & 0xff;
+                int sum = this.registers[o.x] + this.registers[o.y];
+                this.registers[o.x] = sum & 0xff;
                 this.registers[0xf] = ((sum > 255) ? 1 : 0);
             }
 
             case 5 -> { // 8xy5 - Vx -= Vy; sets carry
-                int carry = (this.registers[o._x__()] > this.registers[o.__y_()]) ? 1 : 0;
-                this.registers[o._x__()] = (this.registers[o._x__()] - this.registers[o.__y_()]) & 0xff;
+                int carry = (this.registers[o.x] > this.registers[o.y]) ? 1 : 0;
+                this.registers[o.x] = (this.registers[o.x] - this.registers[o.y]) & 0xff;
                 this.registers[0xf] = carry;
             }
 
             case 6 -> { // 8xy6 - Vx = Vy; Vx >>= 1; sets Vf to 1 if LSB of Vx was 1
-                this.registers[o._x__()] = this.registers[o.__y_()]; // OG Chip-8 quirk
-                int carry = this.registers[o._x__()] & 0b00000001;
-                this.registers[o._x__()] >>= 1;
+                this.registers[o.x] = this.registers[o.y]; // OG Chip-8 quirk
+                int carry = this.registers[o.x] & 0b00000001;
+                this.registers[o.x] >>= 1;
                 this.registers[0xf] = carry;
             }
 
             case 7 -> { // 8xy7 - Vx = Vy - Vx; sets carry
-                int carry = (this.registers[o._x__()] < this.registers[o.__y_()]) ? 1 : 0;
-                this.registers[o._x__()] = (this.registers[o.__y_()] - this.registers[o._x__()]) & 0xff;
+                int carry = (this.registers[o.x] < this.registers[o.y]) ? 1 : 0;
+                this.registers[o.x] = (this.registers[o.y] - this.registers[o.x]) & 0xff;
                 this.registers[0xf] = carry;
             }
 
             case 0xe -> { // 8xye - Vx = Vy; Vx <<= 1; sets Vf to 1 if MSB of Vx was 1
-                this.registers[o._x__()] = this.registers[o.__y_()]; // OG Chip-8 quirk
-                int carry = (this.registers[o._x__()] & 0b10000000) >> 7;
-                this.registers[o._x__()] = (this.registers[o._x__()] << 1) & 0xff;
+                this.registers[o.x] = this.registers[o.y]; // OG Chip-8 quirk
+                int carry = (this.registers[o.x] & 0b10000000) >> 7;
+                this.registers[o.x] = (this.registers[o.x] << 1) & 0xff;
                 this.registers[0xf] = carry;
             }
 
@@ -157,7 +141,7 @@ public class Chip8 {
     }
 
     private void execute_d(Opcode o) {
-        int x = this.registers[o._x__()] % 64, y = this.registers[o.__y_()] % 32, height = o.___n();
+        int x = this.registers[o.x] % 64, y = this.registers[o.y] % 32, height = o.n;
         this.registers[0xf] = 0;
 
         for (int i = 0; i < height; i++) {
@@ -179,38 +163,38 @@ public class Chip8 {
 
     private void execute_e(Opcode o) {
         if (o.c == 0x9 && o.d == 0xe) { // Ex9E - skip if key in Vx is pressed
-            if (this.inputManager.getKey(this.registers[o._x__()]))
+            if (this.inputManager.getKey(this.registers[o.x]))
                 programCounter += 2;
         } else if (o.c == 0xa && o.d == 0x1) { // ExA1 - skip if key in Vx is not pressed
-            if (!this.inputManager.getKey(this.registers[o._x__()]))
+            if (!this.inputManager.getKey(this.registers[o.x]))
                 programCounter += 2;
         }
     }
 
     private void execute_f(Opcode o) {
         if (o.d == 0x7) { // fx07 - Vx = DT
-            this.registers[o._x__()] = delayTimer;
+            this.registers[o.x] = delayTimer;
         } else if (o.d == 0xa) { // fx0a - wait for key press; store it in Vx
-            this.registers[o._x__()] = inputManager.waitForKey();
+            this.registers[o.x] = inputManager.waitForKey();
         } else if (o.c == 0x1 && o.d == 0x5) { // fx15 - delay timer = Vx
-            delayTimer = this.registers[o._x__()];
+            delayTimer = this.registers[o.x];
         } else if (o.c == 0x1 && o.d == 0x8) { // fx18 - sound timer = Vx
-            soundTimer = this.registers[o._x__()];
+            soundTimer = this.registers[o.x];
         } else if (o.c == 0x1 && o.d == 0xe) { // fx1e - I += Vx
-            this.index += this.registers[o._x__()];
+            this.index += this.registers[o.x];
         } else if (o.c == 0x2 && o.d == 0x9) { // fx29 - set I to hex font
-            this.index = this.registers[o._x__()] * 5;
+            this.index = this.registers[o.x] * 5;
         } else if (o.c == 0x3 && o.d == 0x3) { // fx33 - store bcd of Vx at I
-            int value = this.registers[o._x__()];
+            int value = this.registers[o.x];
             this.memory[this.index] = value / 100;
             this.memory[this.index + 1] = value % 100 / 10;
             this.memory[this.index + 2] = value % 10;
         } else if (o.c == 0x5 && o.d == 0x5) { // Fx55 - store registers
-            for (int i = 0; i < o._x__() + 1; i++) {
+            for (int i = 0; i < o.x + 1; i++) {
                 this.memory[this.index + i] = this.registers[i];
             }
         } else if (o.c == 0x6 && o.d == 0x5) { // Fx65 - restore registers
-            for (int i = 0; i < o._x__() + 1; i++) {
+            for (int i = 0; i < o.x + 1; i++) {
                 this.registers[i] = this.memory[this.index + i];
             }
         } else {
@@ -226,54 +210,54 @@ public class Chip8 {
             }
 
             case 1 -> { // 1nnn - jump
-                this.programCounter = o._nnn() - 2;
+                this.programCounter = o.nnn - 2;
             }
 
             case 2 -> { // 2nnn - call
                 this.stack[++this.stackPointer] = this.programCounter;
-                this.programCounter = o._nnn() - 2;
+                this.programCounter = o.nnn - 2;
             }
 
             case 3 -> { // 3xkk - skip if Vx == kk
-                if (this.registers[o._x__()] == o.__kk())
+                if (this.registers[o.x] == o.kk)
                     this.programCounter += 2;
             }
 
             case 4 -> { // 4xkk - skip in Vx != kk
-                if (this.registers[o._x__()] != o.__kk())
+                if (this.registers[o.x] != o.kk)
                     this.programCounter += 2;
             }
 
             case 5 -> { // 5xy0 - skip if Vx == Vy
-                if (this.registers[o._x__()] == this.registers[o.__y_()])
+                if (this.registers[o.x] == this.registers[o.y])
                     this.programCounter += 2;
             }
 
             case 6 -> { // 6xkk - set Vx to kk
-                this.registers[o._x__()] = o.__kk();
+                this.registers[o.x] = o.kk;
             }
 
             case 7 -> { // 7xkk - add kk to Vx
-                this.registers[o._x__()] = (this.registers[o._x__()] + o.__kk()) & 0xff;
+                this.registers[o.x] = (this.registers[o.x] + o.kk) & 0xff;
             }
 
             case 8 -> execute_8(o);
 
             case 9 -> { // 9xy0 - skip if Vx != Vy
-                if (this.registers[o._x__()] != this.registers[o.__y_()])
+                if (this.registers[o.x] != this.registers[o.y])
                     this.programCounter += 2;
             }
 
             case 0xa -> { // annn - load value into I
-                this.index = o._nnn();
+                this.index = o.nnn;
             }
 
             case 0xb -> { // bnnn - jump to nnn + v0
-                this.programCounter = (short) (o._nnn() + this.registers[0] - 2);
+                this.programCounter = (short) (o.nnn + this.registers[0] - 2);
             }
 
-            case 0xc -> { // cxkk - Vx = random() & kkk
-                this.registers[o._x__()] = random.nextInt(256) & o.__kk();
+            case 0xc -> { // cxkk - Vx = random() & kk
+                this.registers[o.x] = random.nextInt(256) & o.kk;
             }
 
             case 0xd -> execute_d(o);
